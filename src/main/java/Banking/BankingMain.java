@@ -1,39 +1,54 @@
 package Banking;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BankingMain {
+    public List<BankAccount> calculate() {
+        // Initialize four bank accounts with an initial balance (e.g., 20000)
+        List<BankAccount> accountsList = new ArrayList<>();
+        Map<String, BankAccount> accountsMap = new HashMap<>();
 
-    public List<BankAccount> calculate() throws InterruptedException {
-        List<BankAccount> accounts = new ArrayList<>();
-        accounts.add(new BankAccount(1,20000));
-        accounts.add(new BankAccount(2,20000));
-        accounts.add(new BankAccount(3,20000));
-        accounts.add(new BankAccount(4,20000));
-
-        Thread[] threads = new Thread[4];
-        for(int i = 1; i <= 4; i++){
-            String fileName = i + ".txt";
-            threads[i - 1] = new Thread(new TransactionProcessor(accounts.get(i - 1), fileName, accounts));
+        // Create accounts and add to both list and map
+        for (int i = 1; i <= 4; i++) {
+            String accountId = String.valueOf(i);
+            BankAccount account = new BankAccount(accountId, 20000);
+            accountsList.add(account);
+            accountsMap.put(accountId, account);
         }
 
-        for(Thread thread : threads){
+        // Create threads to process transactions from each file
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            // Files are in the resources directory as seen in the project structure
+            String fileName = "src/main/resources/" + i + ".txt";
+            System.out.println("Processing file: " + fileName);
+            TransactionProcessor processor = new TransactionProcessor(accountsMap);
+            Thread thread = new Thread(() -> processor.processTransactions(fileName));
+            threads.add(thread);
             thread.start();
         }
 
-        for(Thread thread : threads){
-            thread.join();
+        // Wait for all threads to complete
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
-
-        return accounts;
+        return accountsList;
     }
-    public static void main(String[] args) throws InterruptedException {
+
+    public static void main(String[] args) {
         BankingMain main = new BankingMain();
         List<BankAccount> accounts = main.calculate();
-        for(BankAccount account : accounts){
-            System.out.println("Final balance of Account Number "  + account.getId() + " : " + account.getBalance());
+        for (BankAccount account : accounts) {
+            System.out.println("Final balance of Account Number " + account.getAccountId() + " : " + account.getBalance());
         }
     }
 }

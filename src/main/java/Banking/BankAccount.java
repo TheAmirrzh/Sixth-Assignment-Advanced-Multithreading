@@ -1,41 +1,61 @@
 package Banking;
 
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BankAccount {
-    private final int id;
-    private int balance;
-    private final Lock lock = new ReentrantLock();
+    private double balance;
+    private final String accountId;
+    private final ReentrantLock lock;
 
-    public BankAccount(int id, int initialBalance) {
-        this.id = id;
+    public BankAccount(String accountId, double initialBalance) {
+        this.accountId = accountId;
         this.balance = initialBalance;
+        this.lock = new ReentrantLock();
     }
 
-    public int getId(){
-        return  id;
-    }
-    public int getBalance() {
-        // TODO: Consider locking (if needed)
-        return balance;
-    }
-
-    public Lock getLock() {
-        return lock;
+    public void deposit(double amount) {
+        lock.lock();
+        try {
+            balance += amount;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public void deposit(int amount) {
-        // TODO: Safely add to balance.
+    public void withdraw(double amount) {
+        lock.lock();
+        try {
+            balance -= amount;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public void withdraw(int amount) {
-        // TODO: Safely withdraw from balance.
+    public void transfer(BankAccount target, double amount) {
+        BankAccount firstLock = this.accountId.compareTo(target.accountId) < 0 ? this : target;
+        BankAccount secondLock = this.accountId.compareTo(target.accountId) < 0 ? target : this;
+
+        firstLock.lock.lock();
+        secondLock.lock.lock();
+        try {
+            this.balance -= amount;
+            target.balance += amount;
+        } finally {
+            secondLock.lock.unlock();
+            firstLock.lock.unlock();
+        }
     }
 
-    public void transfer(BankAccount target, int amount) {
-        // TODO: Safely make the changes
-        // HINT: Both accounts need to be locked, while the changes are being made
-        // HINT: Be cautious of potential deadlocks.
+    public double getBalance() {
+        lock.lock();
+        try {
+            return balance;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public String getAccountId() {
+        return accountId;
     }
 }
